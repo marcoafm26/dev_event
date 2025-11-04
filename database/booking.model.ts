@@ -16,7 +16,6 @@ const BookingSchema = new Schema<IBooking>(
       type: Schema.Types.ObjectId,
       ref: "Event",
       required: [true, "Event ID is required"],
-      index: true, // Add index for faster queries on eventId
     },
     email: {
       type: String,
@@ -25,7 +24,7 @@ const BookingSchema = new Schema<IBooking>(
       lowercase: true,
       validate: {
         validator: function (email: string): boolean {
-          // RFC 5322 compliant email validation regex
+          /// Basic email validation regex
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           return emailRegex.test(email);
         },
@@ -47,7 +46,7 @@ BookingSchema.pre("save", async function (next) {
   if (this.isModified("eventId")) {
     try {
       // Dynamically import Event model to avoid circular dependency issues
-      const Event = models.Event || (await import("./event.model.ts")).default;
+      const Event = models.Event || (await import("./event.model.js")).default;
 
       // Check if the event exists
       const eventExists = await Event.exists({ _id: this.eventId });
@@ -71,10 +70,8 @@ BookingSchema.pre("save", async function (next) {
   next();
 });
 
-// Create index on eventId for optimized queries (e.g., finding all bookings for an event)
-BookingSchema.index({ eventId: 1 });
-
 // Compound index for common query patterns (e.g., bookings for specific event by specific user)
+// This index also covers queries on eventId alone via prefix matching
 BookingSchema.index({ eventId: 1, email: 1 });
 
 // Export the Booking model, reusing existing model in development to prevent OverwriteModelError
