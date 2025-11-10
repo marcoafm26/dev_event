@@ -1,10 +1,12 @@
 import BookEvent from '@/components/BookEvent';
 import EventCard from '@/components/EventCard';
-import { IEvent } from '@/database';
+import { Event, type IEvent } from '@/database';
 import { getSimilarEventsBySlug } from '@/lib/actions/event.actions';
+import connectDB from '@/lib/mongodb';
 import { cacheLife } from 'next/cache';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 type EventDetailsPageProps = {
   params: Promise<{
@@ -54,15 +56,14 @@ const EventTags = ({ tags }: { tags: string[] }) => {
   );
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 async function EventDetailsPage({ params }: EventDetailsPageProps) {
+  'use cache';
+  cacheLife('hours');
+
   const { slug } = await params;
 
-  const request = await fetch(`${BASE_URL}/api/events/${slug}`);
-  const { event } = (await request.json()) as {
-    message: string;
-    event: IEvent;
-  };
+  await connectDB();
+  const event = await Event.findOne({ slug }).lean<IEvent>();
 
   if (!event) {
     return notFound();
@@ -84,8 +85,6 @@ async function EventDetailsPage({ params }: EventDetailsPageProps) {
 
   const bookings = 10;
   const similarEvents = await getSimilarEventsBySlug(slug);
-
-  console.log('similarEvents', similarEvents);
 
   return (
     <section id="event">
@@ -156,7 +155,7 @@ async function EventDetailsPage({ params }: EventDetailsPageProps) {
               <p className="text-sm">Be the first to book this event</p>
             )}
 
-            <BookEvent />
+            <BookEvent eventId={event._id.toString()} slug={slug} />
           </div>
         </aside>
       </div>
@@ -165,7 +164,7 @@ async function EventDetailsPage({ params }: EventDetailsPageProps) {
         <h2>Similar Events</h2>
         <div className="events">
           {similarEvents.map((event) => (
-            <EventCard key={event._id} {...event} />
+            <EventCard key={event._id.toString()} {...event} />
           ))}
         </div>
       </div>
@@ -173,4 +172,12 @@ async function EventDetailsPage({ params }: EventDetailsPageProps) {
   );
 }
 
-export default EventDetailsPage;
+// Simple Suspense wrapper to provide a non-blocking fallback while data loads
+export default function PageWrapper(props: EventDetailsPageProps) {
+  return (
+    <Suspense fallback={<div>Loading…</div>}>
+      {/* EventDetailsPage is an async Server Component; Suspense prevents route blocking */}
+      <EventDetailsPage {...props} />
+    </Suspense>
+  );
+}

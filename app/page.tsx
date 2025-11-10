@@ -1,14 +1,15 @@
 import EventCard from '@/components/EventCard';
 import ExploreBtn from '@/components/ExploreBtn';
-import { IEvent } from '@/database';
+import { Event, type IEvent } from '@/database';
+import connectDB from '@/lib/mongodb';
 import { cacheLife } from 'next/cache';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-const Page = async () => {
+async function Page() {
   'use cache';
   cacheLife('hours');
-  const response = await fetch(`${BASE_URL}/api/events`);
-  const { events } = await response.json();
+
+  await connectDB();
+  const events = await Event.find().sort({ createdAt: -1 }).lean<IEvent[]>();
 
   return (
     <section>
@@ -25,7 +26,7 @@ const Page = async () => {
       <div className="mt-20 space-y-7">
         <h3>Featured Events</h3>
         <ul className="events">
-          {events.map((event: IEvent) => (
+          {events.map((event) => (
             <li key={event.title} className="list-none">
               <EventCard {...event} />
             </li>
@@ -34,8 +35,6 @@ const Page = async () => {
       </div>
     </section>
   );
-
-  <p></p>;
-};
+}
 
 export default Page;
