@@ -1,5 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface EventCardProps {
   title: string;
@@ -16,7 +16,7 @@ const EventCard = ({
   slug,
   location,
   date,
-  time,
+  time
 }: EventCardProps) => {
   return (
     <Link href={`/events/${slug}`} id="event-card">

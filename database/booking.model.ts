@@ -46,7 +46,7 @@ BookingSchema.pre("save", async function (next) {
   if (this.isModified("eventId")) {
     try {
       // Dynamically import Event model to avoid circular dependency issues
-      const Event = models.Event || (await import("./event.model.js")).default;
+      const Event = models.Event || (await import("./event.model")).default;
 
       // Check if the event exists
       const eventExists = await Event.exists({ _id: this.eventId });
