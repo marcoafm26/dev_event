@@ -1,8 +1,16 @@
-import EventCard from "@/components/EventCard";
-import ExploreBtn from "@/components/ExploreBtn";
-import { events } from "@/lib/constants";
+import EventCard from '@/components/EventCard';
+import ExploreBtn from '@/components/ExploreBtn';
+import { Event, type IEvent } from '@/database';
+import connectDB from '@/lib/mongodb';
+import { cacheLife } from 'next/cache';
 
-const Page = () => {
+async function Page() {
+  'use cache';
+  cacheLife('hours');
+
+  await connectDB();
+  const events = await Event.find().sort({ createdAt: -1 }).lean<IEvent[]>();
+
   return (
     <section>
       <h1 className="text-center">
@@ -19,7 +27,7 @@ const Page = () => {
         <h3>Featured Events</h3>
         <ul className="events">
           {events.map((event) => (
-            <li key={event.title}>
+            <li key={event.title} className="list-none">
               <EventCard {...event} />
             </li>
           ))}
@@ -27,8 +35,6 @@ const Page = () => {
       </div>
     </section>
   );
-
-  <p></p>;
-};
+}
 
 export default Page;
